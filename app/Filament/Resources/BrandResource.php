@@ -2,16 +2,20 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\BrandResource\Pages;
-use App\Filament\Resources\BrandResource\RelationManagers;
-use App\Models\Brand;
 use Filament\Forms;
-use Filament\Forms\Form;
-use Filament\Resources\Resource;
 use Filament\Tables;
+use App\Models\Brand;
+use Filament\Forms\Form;
 use Filament\Tables\Table;
+use Filament\Resources\Resource;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Forms\Components\TextInput;
+use Filament\Tables\Columns\ImageColumn;
+use Filament\Forms\Components\FileUpload;
 use Illuminate\Database\Eloquent\Builder;
+use App\Filament\Resources\BrandResource\Pages;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use App\Filament\Resources\BrandResource\RelationManagers;
 
 class BrandResource extends Resource
 {
@@ -22,9 +26,15 @@ class BrandResource extends Resource
     public static function form(Form $form): Form
     {
         return $form
-            ->schema([
-                //
-            ]);
+        ->schema([
+            TextInput::make('name')
+            ->required()
+            ->maxLength(255),
+
+            FileUpload::make('logo')
+            ->image()
+            ->required(),
+        ]);
     }
 
     public static function table(Table $table): Table
@@ -32,6 +42,9 @@ class BrandResource extends Resource
         return $table
             ->columns([
                 //
+                TextColumn::make('name')
+                ->searchable(),
+                ImageColumn::make('logo'),
             ])
             ->filters([
                 //

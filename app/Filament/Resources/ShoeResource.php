@@ -2,16 +2,23 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\ShoeResource\Pages;
-use App\Filament\Resources\ShoeResource\RelationManagers;
-use App\Models\Shoe;
 use Filament\Forms;
-use Filament\Forms\Form;
-use Filament\Resources\Resource;
+use App\Models\Shoe;
 use Filament\Tables;
+use Filament\Forms\Form;
 use Filament\Tables\Table;
+use Filament\Resources\Resource;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Fieldset;
+use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\FileUpload;
 use Illuminate\Database\Eloquent\Builder;
+use App\Filament\Resources\ShoeResource\Pages;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use App\Filament\Resources\ShoeResource\RelationManagers;
+
 
 class ShoeResource extends Resource
 {
@@ -22,8 +29,65 @@ class ShoeResource extends Resource
     public static function form(Form $form): Form
     {
         return $form
+            
             ->schema([
-                //
+                Fieldset::make('details')
+                    ->schema([
+                        TextInput::make('name')
+                        ->required()
+                        ->maxlength(255),
+                        TextInput::make('price')
+                        ->required()
+                        ->numeric()
+                        ->prefix('IDR'),
+                        FileUpload::make('thumbnail')
+                        ->image()
+                        ->required(),
+                        Repeater::make('photos')
+                        ->relationship('photos')
+                            ->schema([
+                                FileUpload::make('photo')
+                                ->required(),
+                            ]),
+                        Repeater::make('sizes')
+                        ->relationship('sizes')
+                            ->schema([
+                                TextInput::make('size')
+                                ->required(),
+                            ]),
+                    ]),
+                Fieldset::make('additional')
+                    ->schema([
+
+                        Textarea::make('about')
+                        ->required(),
+
+                        Select::make('is_popular')
+                        ->options([
+                            true => 'popular',
+                            false => 'not popular',
+                        ])
+                        ->required(),
+
+                        Select::make('category_id')
+                        ->relationship('category', 'name')
+                        ->searchable()
+                        ->preload()
+                        ->required(),
+
+                        Select::make('brand_id')
+                        ->relationship('brand', 'name')
+                        ->searchable()
+                        ->preload()
+                        ->required(),
+
+                        TextInput::make('stock')
+                        ->required()
+                        ->numeric()
+                        ->prefix('Qty'),
+                    ])
+                        
+
             ]);
     }
 
