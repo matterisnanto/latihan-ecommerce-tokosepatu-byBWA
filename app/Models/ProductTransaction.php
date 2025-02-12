@@ -2,10 +2,14 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\Shoe;
+use App\Models\PromoCode;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+
 
 class ProductTransaction extends Model
 {
@@ -25,13 +29,21 @@ class ProductTransaction extends Model
         return $randomSring;
 
     }
-    public function shoes(): HasMany
-    {
-        return $this->hasMany(Shoe::class);
-    }
+    // public function shoes(): HasMany
+    // {
+    //     return $this->hasMany(Shoe::class);
+    // }
 
-    public function promoCode(): HasMany
+    // public function promoCode(): HasMany
+    // {
+    //     return $this->hasMany(PromoCode::class);
+    // }
+    public function shoe(): BelongsTo
     {
-        return $this->hasMany(PromoCode::class);
+        return $this->belongsTo(Shoe::class, 'shoe_id');
+    }
+    public function promoCode(): BelongsTo
+    {
+        return $this->belongsTo(PromoCode::class, 'promo_code_id');
     }
 }

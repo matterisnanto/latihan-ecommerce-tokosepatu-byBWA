@@ -12,13 +12,16 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Fieldset;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Textarea;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Forms\Components\TextInput;
+use Filament\Tables\Columns\ImageColumn;
 use Filament\Forms\Components\FileUpload;
+use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Database\Eloquent\Builder;
 use App\Filament\Resources\ShoeResource\Pages;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\ShoeResource\RelationManagers;
-
 
 class ShoeResource extends Resource
 {
@@ -29,7 +32,7 @@ class ShoeResource extends Resource
     public static function form(Form $form): Form
     {
         return $form
-            
+
             ->schema([
                 Fieldset::make('details')
                     ->schema([
@@ -86,7 +89,7 @@ class ShoeResource extends Resource
                         ->numeric()
                         ->prefix('Qty'),
                     ])
-                        
+
 
             ]);
     }
@@ -96,9 +99,27 @@ class ShoeResource extends Resource
         return $table
             ->columns([
                 //
+                TextColumn::make('name')
+                ->searchable(),
+                TextColumn::make('category.name'),
+                ImageColumn::make('thumbnail'),
+                IconColumn::make('is_popular')
+                    ->boolean()
+                    ->truecolor('success')
+                    ->falsecolor('danger')
+                    ->trueicon('heroicon-o-check-circle')
+                    ->falseicon('heroicon-o-x-circle')
+                    ->label('popular'),
+                
             ])
             ->filters([
                 //
+                SelectFilter::make('category_id')
+                    ->label('category')
+                    ->relationship('category', 'name'),
+                SelectFilter::make('category_id')
+                    ->label('category')
+                    ->relationship('category', 'name'),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
