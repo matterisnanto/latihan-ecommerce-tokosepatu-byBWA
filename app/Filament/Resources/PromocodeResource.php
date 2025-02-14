@@ -8,6 +8,7 @@ use Filament\Forms\Form;
 use App\Models\Promocode;
 use Filament\Tables\Table;
 use Filament\Resources\Resource;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Forms\Components\TextInput;
 use Illuminate\Database\Eloquent\Builder;
 use App\Filament\Resources\PromocodeResource\Pages;
@@ -25,7 +26,14 @@ class PromocodeResource extends Resource
         return $form
             ->schema([
                 //
-                TextInput::make('name'),
+                TextInput::make('code')
+                ->required()
+                ->maxLength(255),
+                TextInput::make('discount_amount')
+                ->required()
+                ->numeric()
+                ->prefix('IDR'),
+                
             ]);
     }
 
@@ -34,7 +42,8 @@ class PromocodeResource extends Resource
         return $table
             ->columns([
                 //
-                
+                TextColumn::make('code')
+                ->searchable(),
             ])
             ->filters([
                 //

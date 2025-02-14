@@ -8,13 +8,24 @@ use Filament\Tables;
 use Filament\Forms\Form;
 use App\Models\PromoCode;
 use Filament\Tables\Table;
+use Filament\Actions\Action;
 use Filament\Resources\Resource;
 use App\Models\Producttransaction;
 use Filament\Forms\Components\Grid;
+use Filament\Livewire\Notifications;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Wizard;
+use Filament\Forms\Components\Textarea;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
+use Filament\Tables\Actions\ActionGroup;
+use Filament\Tables\Columns\ImageColumn;
+use Filament\Forms\Components\FileUpload;
+use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Database\Eloquent\Builder;
+use Filament\Forms\Components\ToggleButtons;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\ProducttransactionResource\Pages;
 use App\Filament\Resources\ProducttransactionResource\RelationManagers;
@@ -35,15 +46,15 @@ class ProducttransactionResource extends Resource
                         ->schema([
                             Grid::make(2)
                                 ->schema([
-                                    
-                                
+
+
                                 Select::make('shoe_id')
                                     ->relationship('shoe', 'name')
                                     ->searchable()
                                     ->preload()
                                     ->required()
                                     ->live()
-                                    ->afterStateUpdated(function ($state, callable $get, callable $set){
+                                    ->afterStateUpdated(function ($state, callable $get, callable $set) {
                                         $shoe = Shoe::find($state);
                                         $price = $shoe ? $shoe->price : 0;
                                         $quantity = $get('quantity') ?? 1;
@@ -59,7 +70,7 @@ class ProducttransactionResource extends Resource
                                         $sizes = $shoe ? $shoe->sizes->pluck('size', 'id')->toArray() : [];
                                         $set('shoe_sizes', $sizes);
                                     })
-                                    ->afterStateHydrated(function (callable $get, callable $set, $state){
+                                    ->afterStateHydrated(function (callable $get, callable $set, $state) {
                                         $shoeId = $state;
                                         if ($shoeId) {
                                             $shoe = Shoe::find($shoeId);
@@ -69,21 +80,21 @@ class ProducttransactionResource extends Resource
                                     }),
                                     Select::make('shoe_size')
                                         ->label('shoe_size')
-                                        ->options(function (callable $get){
+                                        ->options(function (callable $get) {
                                             $sizes = $get('shoe_sizes');
                                             return is_array($sizes) ? $sizes : [];
 
                                         })
                                         ->required()
                                         ->live(),
-                                            
+
                                     TextInput::make('quantity')
                                     ->required()
                                     ->numeric()
                                     ->prefix('qty')
                                     ->live()
-                                    ->afterStateUpdated(function ($state, callable $get, callable $set){
-                                        $price = $get('price')?? 0;
+                                    ->afterStateUpdated(function ($state, callable $get, callable $set) {
+                                        $price = $get('price') ?? 0;
                                         $quantity = $state;
                                         $subTotalAmount = $price * $quantity;
 
@@ -97,8 +108,8 @@ class ProducttransactionResource extends Resource
                                     ->relationship('promoCode', 'code')
                                     ->searchable()
                                     ->preload()
-                                    ->reactive()
-                                    ->afterStateUpdated(function ($state, callable $get, callable $set){
+                                    ->live()
+                                    ->afterStateUpdated(function ($state, callable $get, callable $set) {
                                         $subTotalAmount = $get('sub_total_amount');
                                         $promoCode = PromoCode::find($state);
                                         $discount = $promoCode ? $promoCode->discount_amount : 0;
@@ -119,14 +130,62 @@ class ProducttransactionResource extends Resource
                                     ->numeric()
                                     ->prefix('IDR'),
                                     TextInput::make('discount_amount')
-                                    ->readOnly()
+                                    // ->readOnly()
                                     ->required()
                                     ->numeric()
                                     ->prefix('IDR'),
 
                                 ]),
                         ]),
-                ]),
+                    Wizard\Step::make('Customer Information')
+                        ->description('')
+                        ->schema([
+                            Grid::make()
+                                ->schema([
+                                    TextInput::make('name')
+                                    ->required()
+                                    ->maxLength(255),
+                                    TextInput::make('phone')
+                                    ->required()
+                                    ->maxLength(255),
+                                    TextInput::make('email')
+                                    ->required()
+                                    ->maxLength(255),
+                                    Textarea::make('address')
+                                    ->rows(5)
+                                    ->required(),
+                                    TextInput::make('city')
+                                    ->required()
+                                    ->maxLength(255),
+                                    TextInput::make('post_code')
+                                    ->required()
+                                    ->maxLength(255),
+                                    
+                                ]),
+                        ]),
+                    Wizard\Step::make('Label')
+                        ->description('')
+                        ->schema([
+                            TextInput::make('booking_trx_id')
+                            ->required()
+                            ->maxLength(255),
+                            ToggleButtons::make('is_paid')
+                                ->label('apakah sudah membayar?')
+                                ->boolean()
+                                ->grouped()
+                                ->icons([
+                                    true => 'heroicon-o-pencil',
+                                    false => 'heroicon-o-clock',
+                                ])
+                                ->required(),
+                            FileUpload::make('proof')
+                            ->image()
+                            ->required(),
+                        ]),
+                ])
+                ->columnSpan('full')
+                ->columns(1)
+                ->skippable()
             ]);
     }
 
@@ -135,12 +194,44 @@ class ProducttransactionResource extends Resource
         return $table
             ->columns([
                 //
+                ImageColumn::make('shoe.thumbnail'),
+                TextColumn::make('name')
+                ->searchable(),
+                TextColumn::make('booking_trx_id')
+                ->searchable(),
+                IconColumn::make('is_paid')
+                ->boolean()
+                ->trueColor('success')
+                ->falseColor('danger')
+                ->trueIcon('heroicon-o-check-circle')
+                ->falseIcon('heroicon-o-x-circle')
+                ->label('Terverifikasi'),
             ])
             ->filters([
                 //
+                SelectFilter::make('shoe_id')
+                    ->label('shoe')
+                    ->relationship('shoe', 'name'),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\ViewAction::make(),
+
+                Tables\Actions\Action::make('approve')
+                ->label('Approve')
+                ->action(function (ProductTransaction $record) {
+                    $record->is_paid = true;
+                    $record->save();
+
+                    Notification::make()
+                    ->title('Order Approved')
+                    ->success()
+                    ->body('the order has been approved')
+                    ->send();
+                })
+                ->color('success')
+                ->requiresConfirmation()
+                ->visible(fn(ProductTransaction $record) => !$record->is_paid),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
